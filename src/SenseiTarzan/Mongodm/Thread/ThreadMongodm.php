@@ -24,9 +24,10 @@ class ThreadMongodm extends Thread
 
 	public function __construct(
 		private readonly SleeperHandlerEntry $sleeperEntry,
+		private readonly string              $vendors,
 		private readonly QuerySendQueue      $bufferSend,
 		private readonly QueryRecvQueue      $bufferRecv,
-		private readonly MongoConfig		 $config
+		private readonly MongoConfig         $config
 	)
 	{
 		$this->slaveId = self::$nextSlaveNumber++;
@@ -36,7 +37,7 @@ class ThreadMongodm extends Thread
 	protected function onRun(): void
 	{
 
-		require_once dirname(__DIR__, 4) . '/vendor/autoload.php';
+		require_once $this->vendors . '/vendor/autoload.php';
 		$notifier = $this->sleeperEntry->createNotifier();
 		try {
 			$client = new MongoClient($this->config);

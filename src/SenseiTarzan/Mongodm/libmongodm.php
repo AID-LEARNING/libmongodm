@@ -7,6 +7,7 @@ use pocketmine\utils\Terminal;
 use SenseiTarzan\Mongodm\Class\MongoConfig;
 use SenseiTarzan\Mongodm\Class\MongoError;
 use SenseiTarzan\Mongodm\Thread\MongodmManager;
+use Symfony\Component\Filesystem\Path;
 
 class libmongodm
 {
@@ -35,7 +36,13 @@ class libmongodm
 	 * @return MongodmManager
 	 */
 	public static function create(PluginBase $plugin,  MongoConfig $configData, int $workerLimit = 2) : MongodmManager{
-		require_once dirname(__DIR__, 3) . '/vendor/autoload.php';
+		$vendors = Path::join($plugin->getServer()->getDataPath(), "libmongodm");
+		if(is_dir($vendors . "/vendor"))
+			require_once $vendors . '/vendor/autoload.php';
+		else {
+			mkdir($vendors . "/vendor", 0777, true);
+			throw new MongoError("libmongodm library not found");
+		}
 		libmongodm::detectPackaged();
 
 		$manager = new MongodmManager($plugin, $workerLimit, $configData);

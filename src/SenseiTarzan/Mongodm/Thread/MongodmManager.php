@@ -34,6 +34,7 @@ class MongodmManager
 
 	public function __construct(
 		Plugin $plugin,
+		private string $vendors,
 		int $workerCount,
 		private readonly MongoConfig $config
 	)
@@ -50,7 +51,7 @@ class MongodmManager
 
 	public function addWorker(): void
 	{
-		$this->workers[$this->workerCount++] =  new ThreadMongodm($this->sleeperHandlerEntry, $this->bufferSend, $this->bufferRecv, $this->config);
+		$this->workers[$this->workerCount++] =  new ThreadMongodm($this->sleeperHandlerEntry, $this->vendors, $this->bufferSend, $this->bufferRecv, $this->config);
 	}
 
 	public function stopRunning(): void
