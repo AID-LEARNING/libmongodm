@@ -5,7 +5,6 @@ branches:
   - pm5
 projects:
   libmongodm:
-    path: ""
     model: virion
     type: library
     libs:
