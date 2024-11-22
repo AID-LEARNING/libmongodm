@@ -1,0 +1,26 @@
+{
+    "name": "aid-learning/libmongodm",
+    "description": "MongoDB Client for PMMP",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "SenseiTarzan\\Mongodm\\": "src/SenseiTarzan/Mongodm"
+        }
+    },
+    "authors": [
+        {
+            "name": "SenseiTarzan",
+            "email": "gabrielcaptari0@gmail.com"
+        }
+    ],
+    "require": {
+        "ext-mongodb": "*",
+        "mongodb/mongodb": "^1.20",
+      "ext-igbinary": "*",
+      "ext-pmmpthread": "*"
+    },
+    "require-dev": {
+        "sof3/await-generator": "^3.6",
+        "pocketmine/pocketmine-mp": "^5.21"
+    }
+}
