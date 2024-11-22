@@ -1,11 +1,10 @@
---- # Poggit-CI Manifest. Open the CI at https://poggit.pmmp.io/ci/Muqsit/AsyncIterator
+--- # Poggit-CI Manifest. Open the CI at https://poggit.pmmp.io/ci/AID-LEARNING/libmongodm
 build-by-default: true
 branches:
   - master
   - pm5
 projects:
   libmongodm:
-    path: ""
     model: virion
     type: library
     libs:
