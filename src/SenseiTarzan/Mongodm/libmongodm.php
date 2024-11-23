@@ -45,7 +45,7 @@ class libmongodm
 		}
 		libmongodm::detectPackaged();
 
-		$manager = new MongodmManager($plugin, $workerLimit, $configData);
+		$manager = new MongodmManager($plugin, $vendors, $workerLimit, $configData);
 		while(!$manager->connCreated()){
 			usleep(1000);
 		}
