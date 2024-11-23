@@ -1,21 +1,23 @@
 <?php
 
-namespace SenseiTarzan\Mongodm\Thread;
+namespace SenseiTarzan\Mongodm;
 
 use Error;
 use Exception;
 use pocketmine\plugin\Plugin;
+use pocketmine\Server;
 use pocketmine\snooze\SleeperHandlerEntry;
+use pocketmine\utils\Terminal;
 use ReflectionClass;
 use SenseiTarzan\Mongodm\Class\MongoConfig;
 use SenseiTarzan\Mongodm\Class\MongoError;
 use SenseiTarzan\Mongodm\Class\Request;
 use SenseiTarzan\Mongodm\Class\Response;
 use SenseiTarzan\Mongodm\Exception\QueueShutdownException;
-use SenseiTarzan\Mongodm\libmongodm;
+use SenseiTarzan\Mongodm\Thread\QueryRecvQueue;
+use SenseiTarzan\Mongodm\Thread\QuerySendQueue;
+use SenseiTarzan\Mongodm\Thread\ThreadMongodm;
 use SplFixedArray;
-use pocketmine\Server;
-use pocketmine\utils\Terminal;
 
 class MongodmManager
 {

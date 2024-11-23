@@ -6,7 +6,6 @@ use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Terminal;
 use SenseiTarzan\Mongodm\Class\MongoConfig;
 use SenseiTarzan\Mongodm\Class\MongoError;
-use SenseiTarzan\Mongodm\Thread\MongodmManager;
 use Symfony\Component\Filesystem\Path;
 
 class libmongodm

@@ -2,14 +2,16 @@
 
 namespace SenseiTarzan\Mongodm\Thread;
 
-use pmmp\thread\ThreadSafeArray;
+use Composer\Autoload\ClassLoader;
+use pmmp\thread\Thread as NativeThread;
 use pocketmine\snooze\SleeperHandlerEntry;
 use pocketmine\thread\Thread;
-use pmmp\thread\Thread as NativeThread;
 use SenseiTarzan\Mongodm\Class\MongoConfig;
 use SenseiTarzan\Mongodm\Class\MongoError;
 use SenseiTarzan\Mongodm\Class\Request;
 use SenseiTarzan\Mongodm\Client\MongoClient;
+use pocketmine\Server;
+use SenseiTarzan\Mongodm\libmongodm;
 use Throwable;
 
 class ThreadMongodm extends Thread
@@ -31,6 +33,13 @@ class ThreadMongodm extends Thread
 	)
 	{
 		$this->slaveId = self::$nextSlaveNumber++;
+		if(!libmongodm::isPackaged()){
+			/** @noinspection PhpUndefinedMethodInspection */
+			/** @noinspection NullPointerExceptionInspection */
+			/** @var ClassLoader $cl */
+			$cl = Server::getInstance()->getPluginManager()->getPlugin("DEVirion")->getVirionClassLoader();
+			$this->setClassLoaders([Server::getInstance()->getLoader(), $cl]);
+		}
 		$this->start(NativeThread::INHERIT_INI);
 	}
 
