@@ -70,7 +70,7 @@ class MongodmManager
 		}
 	}
 
-	public function quit(): void
+	public function close(): void
 	{
 		$this->stopRunning();
 	}
