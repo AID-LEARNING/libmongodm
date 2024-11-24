@@ -4,6 +4,7 @@ namespace SenseiTarzan\Mongodm;
 
 use Error;
 use Exception;
+use Generator;
 use pocketmine\plugin\Plugin;
 use pocketmine\Server;
 use pocketmine\snooze\SleeperHandlerEntry;
@@ -17,6 +18,7 @@ use SenseiTarzan\Mongodm\Exception\QueueShutdownException;
 use SenseiTarzan\Mongodm\Thread\QueryRecvQueue;
 use SenseiTarzan\Mongodm\Thread\QuerySendQueue;
 use SenseiTarzan\Mongodm\Thread\ThreadMongodm;
+use SOFe\AwaitGenerator\Await;
 use SplFixedArray;
 
 class MongodmManager
@@ -129,6 +131,20 @@ class MongodmManager
 		};
 
 		$this->addQuery($queryId, $request, $argv);
+	}
+
+	/**
+	 * @param string $request
+	 * @param array $argv
+	 * @return Generator
+	 * @throws QueueShutdownException
+	 */
+	private function asyncRequest(string $request, array $argv = []): Generator
+	{
+		$onSuccess = yield Await::RESOLVE;
+		$onError = yield Await::REJECT;
+		$this->executeRequest($request, $argv, $onSuccess, $onError);
+		return yield Await::ONCE;
 	}
 
 
