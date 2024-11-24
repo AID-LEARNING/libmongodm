@@ -139,7 +139,7 @@ class MongodmManager
 	 * @return Generator
 	 * @throws QueueShutdownException
 	 */
-	private function asyncRequest(string $request, array $argv = []): Generator
+	public function asyncRequest(string $request, array $argv = []): Generator
 	{
 		$onSuccess = yield Await::RESOLVE;
 		$onError = yield Await::REJECT;
