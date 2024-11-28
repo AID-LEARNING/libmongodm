@@ -16,7 +16,8 @@ use Throwable;
 
 class ThreadMongodm extends Thread
 {
-
+	private const MONGODB_TPS = 5;
+	private const MONGODB_TIME_PER_TICK = 1 / self::MONGODB_TPS;
 	private static int $nextSlaveNumber = 0;
 
 	private readonly int $slaveId;
@@ -57,22 +58,30 @@ class ThreadMongodm extends Thread
 			return;
 		}
 		while(true) {
-			$row = $this->bufferSend->fetchQuery();
-			if (!is_string($row)) {
-				break;
-			}
+			$start = microtime(true);
 			$this->busy = true;
-			/**
-			 * @var class-string<Request> $request
-			 */
-			[$queryId, $request, $argv] = igbinary_unserialize($row);
-			try{
-				$this->bufferRecv->publishResult($queryId, $request::run($client, $argv));
-			}catch(MongoError $error){
-				$this->bufferRecv->publishError($queryId, $error);
+			for ($i = 0; $i < 100; ++$i){
+				$row = $this->bufferSend->fetchQuery();
+				if (!is_string($row)) {
+					$this->busy = false;
+					break 2;
+				}
+				/**
+				 * @var class-string<Request> $request
+				 */
+				[$queryId, $request, $argv] = igbinary_unserialize($row);
+				try{
+					$this->bufferRecv->publishResult($queryId, $request::run($client, $argv));
+				}catch(MongoError $error){
+					$this->bufferRecv->publishError($queryId, $error);
+				}
+				$notifier->wakeupSleeper();
 			}
-			$notifier->wakeupSleeper();
 			$this->busy = false;
+			$time = microtime(true) - $start;
+			if($time < self::MONGODB_TIME_PER_TICK){
+				@time_sleep_until(microtime(true) + self::MONGODB_TIME_PER_TICK - $time);
+			}
 		}
 	}
 	public function stopRunning(): void {

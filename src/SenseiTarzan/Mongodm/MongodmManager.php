@@ -2,6 +2,7 @@
 
 namespace SenseiTarzan\Mongodm;
 
+use AttachableLogger;
 use Error;
 use Exception;
 use Generator;
@@ -25,26 +26,26 @@ class MongodmManager
 {
 	private SleeperHandlerEntry $sleeperHandlerEntry;
 	/**
-	 * @var SplFixedArray<ThreadMongodm>
+	 * @var array<ThreadMongodm>
 	 */
-	private SplFixedArray $workers;
+	private array $workers;
 	private QuerySendQueue $bufferSend;
 	private QueryRecvQueue $bufferRecv;
+	private readonly AttachableLogger $logger;
 
 	private array $handlers = [];
 	private int $workerCount = 0;
 	private static int $queryId = 0;
-	private readonly \AttachableLogger $logger;
 
 	public function __construct(
-		Plugin $plugin,
-		private string $vendors,
-		int $workerCount,
+		Plugin                       $plugin,
+		private string               $vendors,
+		readonly int                 $workerCountMax,
 		private readonly MongoConfig $config
 	)
 	{
 		$this->logger = $plugin->getLogger();
-		$this->workers = new SplFixedArray($workerCount);
+		$this->workers = [];
 		$this->bufferSend = new QuerySendQueue();
 		$this->bufferRecv = new QueryRecvQueue();
 		$this->sleeperHandlerEntry = Server::getInstance()->getTickSleeper()->addNotifier(function(): void {
@@ -53,7 +54,7 @@ class MongodmManager
 		$this->addWorker();
 	}
 
-	public function addWorker(): void
+	private function addWorker(): void
 	{
 		$this->workers[$this->workerCount++] =  new ThreadMongodm($this->sleeperHandlerEntry, $this->vendors, $this->bufferSend, $this->bufferRecv, $this->config);
 	}
@@ -62,11 +63,8 @@ class MongodmManager
 	{
 		//$this->bufferSend->invalidate();
 		/** @var ThreadMongodm[] $worker */
-		$iterator = $this->workers->getIterator();
-		while ($iterator->valid()) {
-			$worker = $iterator->current();
+		foreach($this->workers as $worker) {
 			$worker?->stopRunning();
-			$iterator->next();
 		}
 	}
 
@@ -158,16 +156,11 @@ class MongodmManager
 	private function addQuery(int $queryId, string $request, array $argv = []) : void{
 		$this->bufferSend->scheduleQuery($queryId, $request, $argv);
 
-		$iterator = $this->workers->getIterator();
-		while ($iterator->valid()) {
-			$worker = $iterator->current();
-			if(!$worker || !$worker->isBusy()){
+		foreach($this->workers as $worker) {
+			if(!$worker->isBusy())
 				return;
-			}
-			$iterator->next();
 		}
-		unset($iterator);
-		if($this->workerCount < $this->workers->getSize()){
+		if($this->workerCount < $this->workerCountMax){
 			$this->addWorker();
 		}
 	}

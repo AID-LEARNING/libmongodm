@@ -21,6 +21,8 @@ abstract class Request
 		try {
 			return static::request($client->selectCollection(static::COLLECTION_NAME), $argv);
 		} catch (Throwable $th) {
+			if($th instanceof MongoError)
+				throw $th;
 			throw new MongoError(MongoError::STAGE_EXECUTE, $th->getMessage());
 		}
 	}
