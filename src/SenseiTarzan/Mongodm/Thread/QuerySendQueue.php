@@ -2,8 +2,10 @@
 
 namespace SenseiTarzan\Mongodm\Thread;
 
+use Closure;
 use pmmp\thread\ThreadSafe;
 use pmmp\thread\ThreadSafeArray;
+use SenseiTarzan\Mongodm\Class\ETypeRequest;
 use SenseiTarzan\Mongodm\Class\Request;
 use SenseiTarzan\Mongodm\Exception\QueueShutdownException;
 
@@ -18,19 +20,20 @@ class QuerySendQueue extends ThreadSafe
 		$this->queries = new ThreadSafeArray();
 	}
 
-	/**
-	 * @param int $queryId
-	 * @param class-string<Request> $request
-	 * @param array $argv
-	 * @return void
-	 * @throws QueueShutdownException
-	 */
-	public function scheduleQuery(int $queryId, string $request, array $argv = []): void {
+    /**
+     * @param int $queryId
+     * @param ETypeRequest $type
+     * @param string|Closure $request
+     * @param array|string|null $argv
+     * @return void
+     * @throws QueueShutdownException
+     */
+	public function scheduleQuery(int $queryId, ETypeRequest $type, string|Closure $request, array|string|null $argv = null): void {
 		if($this->invalidated){
 			throw new QueueShutdownException("You cannot schedule a query on an invalidated queue.");
 		}
-		$this->synchronized(function() use ($queryId, $request, $argv) : void{
-			$this->queries[] = igbinary_serialize([$queryId, $request, $argv]);
+		$this->synchronized(function() use ($queryId, $type, $request, $argv) : void{
+            $this->queries[] = ThreadSafeArray::fromArray([$queryId, $type->value, $request, igbinary_serialize($argv)]);
 			$this->notifyOne();
 		});
 	}

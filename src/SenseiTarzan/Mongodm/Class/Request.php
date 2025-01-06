@@ -17,7 +17,7 @@ abstract class Request
 	 * @param array $argv
 	 * @return Response
 	 */
-	public static function run(MongoClient $client, array $argv): Response{
+	public static function run(MongoClient $client, array|string|null $argv): mixed{
 		try {
 			return static::request($client->selectCollection(static::COLLECTION_NAME), $argv);
 		} catch (Throwable $th) {
@@ -26,7 +26,7 @@ abstract class Request
 			throw new MongoError(MongoError::STAGE_EXECUTE, $th->getMessage());
 		}
 	}
-	protected static function request(Collection $collection, array $argv): Response{
+	protected static function request(Collection $collection, array|string|null $argv): mixed{
 		return Response::getEmpty();
 	}
 }

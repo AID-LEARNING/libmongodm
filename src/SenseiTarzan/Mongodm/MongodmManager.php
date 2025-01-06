@@ -3,6 +3,7 @@
 namespace SenseiTarzan\Mongodm;
 
 use AttachableLogger;
+use Closure;
 use Error;
 use Exception;
 use Generator;
@@ -11,6 +12,7 @@ use pocketmine\Server;
 use pocketmine\snooze\SleeperHandlerEntry;
 use pocketmine\utils\Terminal;
 use ReflectionClass;
+use SenseiTarzan\Mongodm\Class\ETypeRequest;
 use SenseiTarzan\Mongodm\Class\MongoConfig;
 use SenseiTarzan\Mongodm\Class\MongoError;
 use SenseiTarzan\Mongodm\Class\Request;
@@ -51,7 +53,6 @@ class MongodmManager
 		$this->sleeperHandlerEntry = Server::getInstance()->getTickSleeper()->addNotifier(function(): void {
 			$this->checkResults();
 		});
-		$this->addWorker();
 	}
 
 	private function addWorker(): void
@@ -73,17 +74,18 @@ class MongodmManager
 		$this->stopRunning();
 	}
 
-	/**
-	 * @param class-string<Request> $request
-	 * @param array $argv
-	 * @param callable|null $handler
-	 * @param callable|null $onError
-	 * @throws QueueShutdownException
-	 */
-	public function executeRequest(string $request, array $argv = [], ?callable $handler = null, ?callable $onError = null) : void{
+    /**
+     * @param ETypeRequest $type
+     * @param class-string<Request>|Closure $request
+     * @param array|string|null $argv
+     * @param callable|null $handler
+     * @param callable|null $onError
+     * @throws QueueShutdownException
+     */
+	public function executeRequest(ETypeRequest $type, string|Closure $request, array|string|null $argv = null, ?callable $handler = null, ?callable $onError = null) : void{
 		$queryId = self::$queryId++;
 		$trace = libmongodm::isPackaged() ? null : new Exception("(This is the original stack trace for the following error)");
-		$this->handlers[$queryId] = function(MongoError|Response $results) use ($handler, $onError, $trace){
+		$this->handlers[$queryId] = function(mixed $results) use ($handler, $onError, $trace){
 			if($results instanceof MongoError){
 				$this->reportError($onError, $results, $trace);
 			}else{
@@ -128,33 +130,35 @@ class MongodmManager
 			}
 		};
 
-		$this->addQuery($queryId, $request, $argv);
+		$this->addQuery($queryId, $type, $request, $argv);
 	}
 
-	/**
-	 * @param string $request
-	 * @param array $argv
-	 * @return Generator
-	 * @throws QueueShutdownException
-	 */
-	public function asyncRequest(string $request, array $argv = []): Generator
+    /**
+     * @param ETypeRequest $type
+     * @param lass-string<Request>|Closure $request
+     * @param array|string|null $argv
+     * @return Generator
+     * @throws QueueShutdownException
+     */
+	public function asyncRequest(ETypeRequest $type, string|Closure $request, array|string|null $argv = null): Generator
 	{
 		$onSuccess = yield Await::RESOLVE;
 		$onError = yield Await::REJECT;
-		$this->executeRequest($request, $argv, $onSuccess, $onError);
+		$this->executeRequest($type, $request, $argv, $onSuccess, $onError);
 		return yield Await::ONCE;
 	}
 
 
-	/**
-	 * @param int $queryId
-	 * @param class-string<Request> $request
-	 * @param array $argv
-	 * @return void
-	 * @throws QueueShutdownException
-	 */
-	private function addQuery(int $queryId, string $request, array $argv = []) : void{
-		$this->bufferSend->scheduleQuery($queryId, $request, $argv);
+    /**
+     * @param int $queryId
+     * @param ETypeRequest $type
+     * @param class-string<Request>|Closure $request
+     * @param array|string|null $argv
+     * @return void
+     * @throws QueueShutdownException
+     */
+	private function addQuery(int $queryId, ETypeRequest $type, string|Closure $request, array|string|null $argv = null) : void{
+		$this->bufferSend->scheduleQuery($queryId, $type, $request, $argv);
 
 		foreach($this->workers as $worker) {
 			if(!$worker->isBusy())
@@ -164,8 +168,6 @@ class MongodmManager
 			$this->addWorker();
 		}
 	}
-
-
 
 	private function reportError(?callable $default, MongoError $error, ?Exception $trace) : void{
 		if($default !== null){

@@ -4,8 +4,10 @@ namespace SenseiTarzan\Mongodm\Thread;
 
 use Composer\Autoload\ClassLoader;
 use pmmp\thread\Thread as NativeThread;
+use pmmp\thread\ThreadSafeArray;
 use pocketmine\snooze\SleeperHandlerEntry;
 use pocketmine\thread\Thread;
+use SenseiTarzan\Mongodm\Class\ETypeRequest;
 use SenseiTarzan\Mongodm\Class\MongoConfig;
 use SenseiTarzan\Mongodm\Class\MongoError;
 use SenseiTarzan\Mongodm\Class\Request;
@@ -46,8 +48,8 @@ class ThreadMongodm extends Thread
 
 	protected function onRun(): void
 	{
-
 		require_once $this->vendors . '/vendor/autoload.php';
+        $runner_request = [];
 		$notifier = $this->sleeperEntry->createNotifier();
 		try {
 			$client = new MongoClient($this->config);
@@ -62,16 +64,27 @@ class ThreadMongodm extends Thread
 			$this->busy = true;
 			for ($i = 0; $i < 100; ++$i){
 				$row = $this->bufferSend->fetchQuery();
-				if (!is_string($row)) {
+				if (!($row instanceof ThreadSafeArray)) {
 					$this->busy = false;
 					break 2;
 				}
-				/**
-				 * @var class-string<Request> $request
-				 */
-				[$queryId, $request, $argv] = igbinary_unserialize($row);
+                /**
+                 * @var class-string<Request>|Closure($client, $argv): mixed $request
+                 */
+                $queryId = $row[0];
+                $type = ETypeRequest::tryFrom($row[1]);
+                $request = $row[2];
+                $argv = igbinary_unserialize($row[3]);
 				try{
-					$this->bufferRecv->publishResult($queryId, $request::run($client, $argv));
+                    if ($type === ETypeRequest::STRING_CLASS) {
+                        if (!(isset($runner_request[$request])))
+                            $runner_request[$request] = $request::run(...);
+                        $this->bufferRecv->publishResult($queryId, $runner_request[$request]::run($client, $argv));
+                    }elseif ($type === ETypeRequest::CLOSURE) {
+                        $this->bufferRecv->publishResult($queryId, $request::run($client, $argv));
+                    } else {
+                        throw new MongoError(MongoError::STAGE_EXECUTE, "type not implemented");
+                    }
 				}catch(MongoError $error){
 					$this->bufferRecv->publishError($queryId, $error);
 				}

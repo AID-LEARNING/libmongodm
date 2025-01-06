@@ -40,7 +40,7 @@ class libmongodm
 			require_once $vendors . '/vendor/autoload.php';
 		else {
 			mkdir($vendors, 0777, true);
-			throw new MongoError("libmongodm library not found");
+			throw new MongoError(MongoError::STAGE_EXECUTE, "libmongodm library not found");
 		}
 		libmongodm::detectPackaged();
 
